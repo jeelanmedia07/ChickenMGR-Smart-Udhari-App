@@ -20,6 +20,12 @@
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; margin: 0; padding-bottom: 90px; color: #1e293b; }
         
+        /* Setup Screen Overlay */
+        #setupScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f0fdf4; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .setup-card { background: white; padding: 24px; border-radius: 20px; width: 100%; max-width: 380px; box-shadow: 0 10px 25px rgba(5,150,105,0.15); text-align: center; border: 1px solid #d1fae5; }
+        .setup-card h2 { margin: 10px 0 4px 0; font-size: 20px; font-weight: 800; color: #065f46; }
+        .setup-card p { margin: 0 0 18px 0; font-size: 12.5px; color: #64748b; font-weight: 600; }
+        
         /* Custom Header */
         header { 
             background: url('Header Background.jpeg') no-repeat center center; 
@@ -178,9 +184,9 @@
         .modal-box p { margin: 0 0 14px 0; font-size: 12px; color: #64748b; font-weight: 600; }
         .modal-input { width: 100%; padding: 10px 12px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; margin-bottom: 10px; font-weight: 600; background: #f8fafc; text-align: left; }
 
-        .modal-logo-wrapper { position: relative; width: 70px; height: 70px; margin: 0 auto 10px auto; cursor: pointer; }
+        .modal-logo-wrapper { position: relative; width: 80px; height: 80px; margin: 0 auto 14px auto; cursor: pointer; }
         .modal-logo-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #059669; box-shadow: 0 4px 10px rgba(5,150,105,0.25); background: #ffffff; }
-        .modal-logo-edit-icon { position: absolute; bottom: 0; right: 0; background: #059669; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; }
+        .modal-logo-edit-icon { position: absolute; bottom: 0; right: 0; background: #059669; color: white; border-radius: 50%; width: 24px; height: 24px; font-size: 12px; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; }
 
         /* Red Box for Remaining */
         .red-box-container { background: #fef2f2; border: 2px dashed #fca5a5; padding: 10px; border-radius: 10px; margin-bottom: 12px; text-align: center; }
@@ -217,22 +223,23 @@
 </head>
 <body onload="initApp()">
 
-    <!-- SETUP / EDIT MODAL -->
-    <div id="shopSetupModal" class="modal">
-        <div class="modal-box">
-            <div class="modal-logo-wrapper" onclick="triggerLogoFileInput()" title="Click to Change Logo">
-                <img id="modalLogoPreview" src="Logo.png" alt="Shop Logo" class="modal-logo-img" onerror="this.src='Logo.png'">
+    <!-- SETUP SCREEN (Appears first if not registered) -->
+    <div id="setupScreen">
+        <div class="setup-card">
+            <div class="modal-logo-wrapper" onclick="triggerSetupLogoFileInput()" title="Click to Change Logo">
+                <img id="setupModalLogoPreview" src="Logo.png" alt="Shop Logo" class="modal-logo-img" onerror="this.src='Logo.png'">
                 <div class="modal-logo-edit-icon">📷</div>
             </div>
-            <input type="file" id="setupLogoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
+            <input type="file" id="setupLogoFileInput" accept="image/*" style="display:none;" onchange="handleSetupLogoUpload(event)">
 
-            <h3>Shop Setup Details</h3>
-            <p>Apni dukan ki details bharein aur logo par click karke DP set karein:</p>
-            <input type="text" id="setupShopName" class="modal-input" placeholder="Shop Name (e.g. Kadir Chicken Center)">
-            <input type="text" id="setupOwnerName" class="modal-input" placeholder="Owner Name (e.g. Kadir Bhai)">
-            <input type="tel" id="setupPhone" class="modal-input" placeholder="Mobile Number (e.g. 9096XXXXXX)">
+            <h2>Smart Udhari Setup</h2>
+            <p>Apni dukan ki details darj karke shuru karein:</p>
             
-            <button onclick="saveShopSetupDetails()" style="width: 100%; background: #059669; color: white; border: none; padding: 11px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 6px;">Save Details 🚀</button>
+            <input type="text" id="inputShopName" class="modal-input" placeholder="Shop Name (e.g. Kadir Chicken Center)">
+            <input type="text" id="inputOwnerName" class="modal-input" placeholder="Owner Name (e.g. Kadir Bhai)">
+            <input type="tel" id="inputPhone" class="modal-input" placeholder="Mobile Number (e.g. 9096XXXXXX)">
+            
+            <button onclick="saveSetupAndStart()" style="width: 100%; background: #059669; color: white; border: none; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 14px; cursor: pointer; box-shadow: 0 4px 12px rgba(5,150,105,0.25);">Start App 🚀</button>
         </div>
     </div>
 
@@ -247,7 +254,7 @@
         </div>
         <div class="header-actions">
             <button id="installAppBtn" class="install-pwa-btn" onclick="installPWAApp()">📥 Install App</button>
-            <button class="header-edit-btn" onclick="openShopSetupModal()">⚙️ Edit</button>
+            <button class="header-edit-btn" onclick="openSetupScreen()">⚙️ Setup</button>
         </div>
     </header>
 
@@ -541,19 +548,18 @@
         }
         const db = firebase.database();
 
+        let shopSetup = JSON.parse(localStorage.getItem('smart_udhari_shop_setup') || 'null');
+        let setupLogoData = null;
+
         function getShopPath() {
-            let shopSetupData = JSON.parse(localStorage.getItem('smart_udhari_shop_setup') || 'null');
-            if (shopSetupData && shopSetupData.phone) {
-                // Unique path based on owner's mobile number so data never mixes between users
-                return 'shops/' + shopSetupData.phone.replace(/[^0-9]/g, '');
+            if (shopSetup && shopSetup.phone) {
+                return 'shops/' + shopSetup.phone;
             }
             return null;
         }
 
         let customers = [];
         let traders = [];
-        let shopSetup = JSON.parse(localStorage.getItem('smart_udhari_shop_setup') || 'null');
-        let uploadedLogoData = null;
         let activeCustPhone = null;
         let activeTraderId = null;
         let activeAmountType = 'udh';
@@ -561,16 +567,84 @@
         let deferredPrompt = null;
 
         function initApp() {
-            checkShopSetup();
+            if (!shopSetup || !shopSetup.phone) {
+                openSetupScreen();
+            } else {
+                applyDashboardData();
+                initFirebaseSync();
+            }
             updateCalendarStatusBar();
             registerServiceWorker();
+        }
+
+        function openSetupScreen() {
+            if (shopSetup) {
+                document.getElementById('inputShopName').value = shopSetup.shopName || '';
+                document.getElementById('inputOwnerName').value = shopSetup.ownerName || '';
+                document.getElementById('inputPhone').value = shopSetup.phone || '';
+                setupLogoData = shopSetup.logoImg || null;
+                if (setupLogoData) {
+                    document.getElementById('setupModalLogoPreview').src = setupLogoData;
+                }
+            }
+            document.getElementById('setupScreen').style.display = 'flex';
+        }
+
+        function triggerSetupLogoFileInput() {
+            document.getElementById('setupLogoFileInput').click();
+        }
+
+        function handleSetupLogoUpload(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    setupLogoData = e.target.result;
+                    document.getElementById('setupModalLogoPreview').src = setupLogoData;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveSetupAndStart() {
+            let shopName = document.getElementById('inputShopName').value.trim();
+            let ownerName = document.getElementById('inputOwnerName').value.trim();
+            let phone = document.getElementById('inputPhone').value.trim().replace(/[^0-9]/g, '');
+
+            if (!shopName || !ownerName || !phone || phone.length < 10) {
+                alert("Kripya sahi Shop Name, Owner Name aur 10 ankon ka Mobile Number bharein!");
+                return;
+            }
+
+            shopSetup = {
+                shopName: shopName,
+                ownerName: ownerName,
+                phone: phone,
+                logoImg: setupLogoData || 'Logo.png'
+            };
+
+            localStorage.setItem('smart_udhari_shop_setup', JSON.stringify(shopSetup));
+
+            // Sync with Firebase under unique path
+            db.ref(getShopPath() + '/shopSetup').set(shopSetup);
+
+            document.getElementById('setupScreen').style.display = 'none';
+            applyDashboardData();
+            initFirebaseSync();
+        }
+
+        function applyDashboardData() {
+            document.getElementById('displayHeaderShopName').innerText = shopSetup.shopName;
+            document.getElementById('displayHeaderOwnerDetails').innerText = `Owner: ${shopSetup.ownerName} (${shopSetup.phone})`;
+            if (shopSetup.logoImg) {
+                document.getElementById('displayHeaderLogo').src = shopSetup.logoImg;
+            }
         }
 
         function initFirebaseSync() {
             let path = getShopPath();
             if (!path) return;
 
-            // Realtime sync for customers
             db.ref(path + '/customers').on('value', (snapshot) => {
                 let data = snapshot.val();
                 customers = data ? Object.values(data) : [];
@@ -579,7 +653,6 @@
                 updateDashboardStats();
             });
 
-            // Realtime sync for traders
             db.ref(path + '/traders').on('value', (snapshot) => {
                 let data = snapshot.val();
                 traders = data ? Object.values(data) : [];
@@ -606,28 +679,9 @@
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
-                    }
                     deferredPrompt = null;
                     document.getElementById('installAppBtn').style.display = 'none';
                 });
-            }
-        }
-
-        function triggerLogoFileInput() {
-            document.getElementById('setupLogoFileInput').click();
-        }
-
-        function handleLogoUpload(event) {
-            let file = event.target.files[0];
-            if (file) {
-                let reader = new FileReader();
-                reader.onload = function(e) {
-                    uploadedLogoData = e.target.result;
-                    document.getElementById('modalLogoPreview').src = uploadedLogoData;
-                };
-                reader.readAsDataURL(file);
             }
         }
 
@@ -655,60 +709,6 @@
                 nextDayStatus = "🚀 Mega Sunday Rush";
             }
             document.getElementById('calNextDayStatus').innerText = nextDayStatus;
-        }
-
-        function checkShopSetup() {
-            if (!shopSetup || !shopSetup.shopName || !shopSetup.phone) {
-                openShopSetupModal();
-            } else {
-                document.getElementById('displayHeaderShopName').innerText = shopSetup.shopName;
-                document.getElementById('displayHeaderOwnerDetails').innerText = `Owner: ${shopSetup.ownerName} (${shopSetup.phone})`;
-                if (shopSetup.logoImg) {
-                    document.getElementById('displayHeaderLogo').src = shopSetup.logoImg;
-                    document.getElementById('modalLogoPreview').src = shopSetup.logoImg;
-                }
-                initFirebaseSync();
-            }
-        }
-
-        function openShopSetupModal() {
-            if (shopSetup) {
-                document.getElementById('setupShopName').value = shopSetup.shopName || '';
-                document.getElementById('setupOwnerName').value = shopSetup.ownerName || '';
-                document.getElementById('setupPhone').value = shopSetup.phone || '';
-                uploadedLogoData = shopSetup.logoImg || null;
-                if (uploadedLogoData) {
-                    document.getElementById('modalLogoPreview').src = uploadedLogoData;
-                }
-            }
-            document.getElementById('shopSetupModal').style.display = 'flex';
-        }
-
-        function saveShopSetupDetails() {
-            let shopName = document.getElementById('setupShopName').value.trim();
-            let ownerName = document.getElementById('setupOwnerName').value.trim();
-            let phone = document.getElementById('setupPhone').value.trim();
-
-            if (!shopName || !ownerName || !phone) {
-                alert("Kripya saare khane (Shop Name, Owner Name, Mobile Number) bharein!");
-                return;
-            }
-
-            shopSetup = { shopName, ownerName, phone, logoImg: uploadedLogoData || (shopSetup ? shopSetup.logoImg : 'Logo.png') };
-            localStorage.setItem('smart_udhari_shop_setup', JSON.stringify(shopSetup));
-
-            let path = getShopPath();
-            // Sync Shop Setup & Profile to Firebase under unique owner path
-            db.ref(path + '/shopSetup').set(shopSetup);
-
-            document.getElementById('displayHeaderShopName').innerText = shopName;
-            document.getElementById('displayHeaderOwnerDetails').innerText = `Owner: ${ownerName} (${phone})`;
-            if (shopSetup.logoImg) {
-                document.getElementById('displayHeaderLogo').src = shopSetup.logoImg;
-            }
-
-            document.getElementById('shopSetupModal').style.display = 'none';
-            initFirebaseSync();
         }
 
         function startVoiceSearch() {
@@ -844,7 +844,6 @@
                     pic: imgData || ''
                 });
                 
-                // Sync to Firebase under unique shop path
                 let tradersObj = {};
                 traders.forEach(t => tradersObj[t.id] = t);
                 db.ref(getShopPath() + '/traders').set(tradersObj);
@@ -1211,7 +1210,6 @@
         function saveAndRefreshFirebase() {
             localStorage.setItem('smart_udhari_customers', JSON.stringify(customers));
             
-            // Sync customers to Firebase under unique shop path
             let custObj = {};
             customers.forEach((c, idx) => custObj[c.phone || idx] = c);
             db.ref(getShopPath() + '/customers').set(custObj);
