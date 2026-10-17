@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Smart Udhari - Chicken Shop Manager</title>
+    <meta name="theme-color" content="#065f46">
+    
+    <!-- PWA Manifest Link -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Smart Udhari">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8fafc; margin: 0; padding-bottom: 90px; color: #1e293b; }
+        
+        /* Custom Header */
+        header { 
+            background: url('Header Background.jpeg') no-repeat center center; 
+            background-size: cover; 
+            color: white; 
+            padding: 12px 16px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+            box-shadow: 0 4px 12px rgba(6,95,70,0.25); 
+        }
+        .header-brand { display: flex; align-items: center; gap: 10px; }
+        .header-logo-img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #34d399; box-shadow: 0 2px 6px rgba(0,0,0,0.3); background: #ffffff; }
+        .header-brand h2 { margin: 0; font-size: 15px; font-weight: 800; letter-spacing: 0.3px; text-shadow: 0 1px 3px rgba(0,0,0,0.5); color: #ffffff; }
+        .header-brand p { margin: 2px 0 0 0; font-size: 10.5px; color: #a7f3d0; text-shadow: 0 1px 2px rgba(0,0,0,0.5); font-weight: 600; }
+        
+        .header-actions { display: flex; gap: 6px; align-items: center; }
+        .header-edit-btn { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; backdrop-filter: blur(4px); }
+        .install-pwa-btn { background: #10b981; border: 1px solid #34d399; color: white; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; display: none; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+
+        .container { padding: 14px; max-width: 520px; margin: auto; }
+        
+        /* Tab Views */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Calendar Status Bar */
+        .calendar-status-bar { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.02); gap: 8px; }
+        .cal-orange-date { font-size: 20px; font-weight: 900; color: #059669; line-height: 1.1; white-space: nowrap; }
+        .cal-red-info { flex: 1; padding: 0 8px; border-left: 2px solid #e2e8f0; border-right: 2px solid #e2e8f0; }
+        .cal-red-info h4 { margin: 0; font-size: 13px; font-weight: 800; color: #0f172a; }
+        .cal-red-info p { margin: 2px 0 0 0; font-size: 11px; color: #dc2626; font-weight: 700; }
+        .cal-choco-box { background: #fffbeb; border: 1px dashed #d97706; padding: 6px 10px; border-radius: 8px; text-align: center; min-width: 110px; }
+        .cal-choco-box span { font-size: 10px; color: #b45309; font-weight: 700; display: block; text-transform: uppercase; }
+        .cal-choco-box p { margin: 1px 0 0 0; font-size: 11px; color: #92400e; font-weight: 800; }
+
+        /* Centered Video Banner Box */
+        .video-banner-box { background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 6px 16px rgba(0,0,0,0.06); margin-bottom: 16px; border: 1px solid #d1fae5; text-align: center; position: relative; margin-left: auto; margin-right: auto; }
+        .video-banner-box video { width: 100%; max-height: 260px; object-fit: cover; display: block; }
+        .mute-toggle-btn { position: absolute; top: 12px; right: 12px; background: rgba(0, 0, 0, 0.7); color: white; border: 1px solid rgba(255, 255, 255, 0.4); padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; backdrop-filter: blur(4px); z-index: 10; }
+
+        /* Stats Grid */
+        .stats-box-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .stat-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 0; overflow: hidden; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .stat-header-banner { background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; padding: 7px 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card h2 { margin: 10px 0; font-size: 22px; color: #0f172a; font-weight: 800; }
+
+        /* Infographics Section */
+        .info-section-title { font-size: 14px; font-weight: 800; color: #0f172a; margin: 18px 0 10px 2px; }
+        .infographics-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+        .info-card { background: white; border-radius: 14px; padding: 14px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
+        .info-card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+        .info-card h4 { margin: 0; font-size: 12.5px; font-weight: 700; color: #1e293b; }
+        .info-card p { margin: 0; font-size: 10.5px; color: #64748b; font-weight: 600; line-height: 1.3; }
+
+        /* Udhari Khata & Traders Main List */
+        .action-bar { display: flex; gap: 8px; margin-bottom: 14px; }
+        .search-input { flex: 1; padding: 10px 12px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 10px; background: white; outline: none; font-weight: 600; }
+        .mic-btn { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; padding: 0 12px; border-radius: 10px; font-size: 16px; cursor: pointer; }
+        .add-cust-btn { background: #059669; color: white; border: none; padding: 10px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(5,150,105,0.2); }
+
+        .customer-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03); cursor: pointer; transition: transform 0.1s ease; }
+        .customer-card:active { transform: scale(0.98); }
+        .cust-header { display: flex; align-items: center; justify-content: space-between; }
+        .cust-info { display: flex; align-items: center; gap: 12px; }
+        
+        .avatar-box { width: 46px; height: 46px; background: linear-gradient(135deg, #059669, #047857); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; box-shadow: 0 4px 10px rgba(5,150,105,0.25); text-transform: uppercase; }
+        
+        .cust-details h4 { margin: 0 0 2px 0; font-size: 14.5px; font-weight: 700; color: #1e293b; }
+        .cust-details p { margin: 0; font-size: 11.5px; color: #64748b; font-weight: 600; }
+        .cust-date { font-size: 10.5px; color: #94a3b8; font-weight: 600; margin-top: 2px; display: block; }
+        
+        .cust-amount { text-align: right; }
+        .cust-amount span { font-size: 10.5px; color: #64748b; display: block; font-weight: 600; }
+        .cust-amount h3 { margin: 2px 0 0 0; font-size: 17px; font-weight: 800; color: #dc2626; }
+
+        .cust-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #e2e8f0; }
+        .tap-hint { font-size: 11px; color: #0284c7; font-weight: 700; }
+        .btn-wa-small { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; }
+
+        /* Traders Grid Styles */
+        .traders-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .trader-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); cursor: pointer; border-left: 4px solid #059669; }
+        .trader-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .trader-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #059669; background: #f0fdf4; }
+        .trader-info h4 { margin: 0; font-size: 13px; font-weight: 800; color: #1e293b; }
+        .trader-info p { margin: 2px 0 0 0; font-size: 11px; color: #64748b; }
+        .trader-card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed #e2e8f0; padding-top: 6px; }
+        .trader-bal { font-size: 13px; font-weight: 800; color: #dc2626; }
+
+        /* Detail View for Trader */
+        #traderDetailSection { display: none; }
+        .detail-header-box { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+        .history-container { background: white; border-radius: 14px; border: 1px solid #e2e8f0; overflow-x: auto; margin-bottom: 14px; }
+        .history-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 11.5px; white-space: nowrap; }
+        .history-table th { background: #f1f5f9; color: #059669; padding: 10px; border-bottom: 2px solid #e2e8f0; font-weight: 800; }
+        .history-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; color: #334155; }
+
+        /* 3-Tab Bottom Navigation - Enhanced & Attractive */
+        .bottom-nav { 
+            position: fixed; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background: #ffffff; 
+            border-top: 1px solid #e2e8f0; 
+            display: flex; 
+            justify-content: space-around; 
+            align-items: center; 
+            padding: 8px 12px; 
+            z-index: 998; 
+            box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.08); 
+            max-width: 520px; 
+            margin: auto; 
+        }
+        .nav-item { 
+            text-align: center; 
+            font-size: 11.5px; 
+            font-weight: 700; 
+            color: #64748b; 
+            cursor: pointer; 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 3px; 
+            transition: all 0.2s ease;
+        }
+        .nav-item.active { 
+            color: #059669; 
+            transform: translateY(-2px);
+        }
+        .nav-icon-box {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.2s ease;
+        }
+        .nav-item.active .nav-icon-box {
+            background: #dcfce7;
+            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.2);
+        }
+
+        /* Modals */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(6px); z-index: 99999; justify-content: center; align-items: center; padding: 20px; }
+        .modal-box { background: white; padding: 22px; border-radius: 18px; width: 100%; max-width: 360px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); text-align: center; max-height: 90vh; overflow-y: auto; }
+        .modal-box h3 { margin: 0 0 6px 0; font-size: 17px; font-weight: 800; color: #1e293b; }
+        .modal-box p { margin: 0 0 14px 0; font-size: 12px; color: #64748b; font-weight: 600; }
+        .modal-input { width: 100%; padding: 10px 12px; font-size: 13px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; margin-bottom: 10px; font-weight: 600; background: #f8fafc; text-align: left; }
+
+        .modal-logo-wrapper { position: relative; width: 70px; height: 70px; margin: 0 auto 10px auto; cursor: pointer; }
+        .modal-logo-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid #059669; box-shadow: 0 4px 10px rgba(5,150,105,0.25); background: #ffffff; }
+        .modal-logo-edit-icon { position: absolute; bottom: 0; right: 0; background: #059669; color: white; border-radius: 50%; width: 22px; height: 22px; font-size: 11px; display: flex; align-items: center; justify-content: center; border: 2px solid white; font-weight: bold; }
+
+        /* Red Box for Remaining */
+        .red-box-container { background: #fef2f2; border: 2px dashed #fca5a5; padding: 10px; border-radius: 10px; margin-bottom: 12px; text-align: center; }
+        .red-box-container label { font-size: 11px; font-weight: 800; color: #991b1b; display: block; margin-bottom: 4px; text-transform: uppercase; }
+        .red-box-input { width: 100%; border: none; background: transparent; font-size: 20px; font-weight: 900; color: #dc2626; text-align: center; outline: none; }
+
+        /* Ledger History Modal */
+        .ledger-modal-box { background: white; border-radius: 20px; width: 100%; max-width: 440px; padding: 20px; max-height: 85vh; display: flex; flex-direction: column; }
+        .ledger-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 12px; }
+        .ledger-cust-title h3 { margin: 0; font-size: 17px; font-weight: 800; color: #1e293b; }
+        .ledger-cust-title p { margin: 2px 0 0 0; font-size: 12px; color: #64748b; }
+        
+        .ledger-summary-box { background: #fef2f2; border: 1px dashed #fca5a5; border-radius: 12px; padding: 12px; text-align: center; margin-bottom: 14px; }
+        .ledger-summary-box span { font-size: 11px; color: #991b1b; font-weight: 700; text-transform: uppercase; }
+        .ledger-summary-box h2 { margin: 2px 0 0 0; font-size: 24px; color: #dc2626; font-weight: 800; }
+
+        .ledger-action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .btn-ledger-act { padding: 10px; border-radius: 10px; font-size: 12.5px; font-weight: 800; border: none; cursor: pointer; text-align: center; }
+        .btn-act-jama { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .btn-act-udh { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        .history-list-title { font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px; text-align: left; }
+        .history-scroll-area { overflow-y: auto; flex: 1; margin-bottom: 12px; padding-right: 4px; }
+        .history-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+        .history-item-date { color: #64748b; font-weight: 600; }
+        .history-item-amt { font-weight: 800; }
+        .amt-udh { color: #dc2626; }
+        .amt-jama { color: #166534; }
+
+        .quick-chips { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+        .chip { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 8px; font-size: 11.5px; font-weight: 700; color: #334155; cursor: pointer; }
+        .chip:active { background: #059669; color: white; }
+    </style>
+</head>
+<body onload="initApp()">
+
+    <!-- SETUP / EDIT MODAL -->
+    <div id="shopSetupModal" class="modal">
+        <div class="modal-box">
+            <div class="modal-logo-wrapper" onclick="triggerLogoFileInput()" title="Click to Change Logo">
+                <img id="modalLogoPreview" src="Logo.png" alt="Shop Logo" class="modal-logo-img" onerror="this.src='Logo.png'">
+                <div class="modal-logo-edit-icon">📷</div>
+            </div>
+            <input type="file" id="setupLogoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
+
+            <h3>Shop Setup Details</h3>
+            <p>Apni dukan ki details bharein aur logo par click karke DP set karein:</p>
+            <input type="text" id="setupShopName" class="modal-input" placeholder="Shop Name (e.g. Kadir Chicken Center)">
+            <input type="text" id="setupOwnerName" class="modal-input" placeholder="Owner Name (e.g. Kadir Bhai)">
+            <input type="tel" id="setupPhone" class="modal-input" placeholder="Mobile Number (e.g. 9096XXXXXX)">
+            
+            <button onclick="saveShopSetupDetails()" style="width: 100%; background: #059669; color: white; border: none; padding: 11px; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 6px;">Save Details 🚀</button>
+        </div>
+    </div>
+
+    <!-- DYNAMIC HEADER -->
+    <header>
+        <div class="header-brand">
+            <img id="displayHeaderLogo" src="Logo.png" alt="Shop Logo" class="header-logo-img" onerror="this.src='Logo.png'">
+            <div>
+                <h2 id="displayHeaderShopName">KADIR CHICKEN CENTER</h2>
+                <p id="displayHeaderOwnerDetails">Owner: Loading...</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button id="installAppBtn" class="install-pwa-btn" onclick="installPWAApp()">📥 Install App</button>
+            <button class="header-edit-btn" onclick="openShopSetupModal()">⚙️ Edit</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- TAB 1: DASHBOARD -->
+        <div id="tabDashboard" class="tab-content active">
+            
+            <!-- Calendar Status Bar -->
+            <div class="calendar-status-bar">
+                <div class="cal-orange-date" id="calDateNum">17</div>
+                <div class="cal-red-info">
+                    <h4 id="calDayName">Saturday</h4>
+                    <p id="calSpecialEvent">📅 Fresh Stock Available</p>
+                </div>
+                <div class="cal-choco-box">
+                    <span>Kal Non-Veg</span>
+                    <p id="calNextDayStatus">🔥 Normal Day</p>
+                </div>
+            </div>
+
+            <!-- Centered Video Banner Box -->
+            <div class="video-banner-box">
+                <button id="muteToggleBtn" class="mute-toggle-btn" onclick="toggleVideoMute()">🔇 Unmute Audio</button>
+                <video id="promoVideo" src="Logo Intro.mp4" autoplay loop muted playsinline></video>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-box-grid">
+                <div class="stat-card">
+                    <div class="stat-header-banner">Total Market Udhaar</div>
+                    <h2 id="dashTotalUdhaar" style="color: #dc2626;">₹0</h2>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header-banner">Active Customers</div>
+                    <h2 id="dashTotalCust">0</h2>
+                </div>
+            </div>
+
+            <!-- Infographics Section -->
+            <div class="info-section-title">
+                <span>⚡ Smart App Key Features</span>
+            </div>
+
+            <div class="infographics-grid">
+                <div class="info-card">
+                    <div class="info-card-icon" style="background: #e0f2fe; color: #0284c7;">💬</div>
+                    <h4>1-Tap WhatsApp</h4>
+                    <p>Direct receipt & payment reminder bill link</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon" style="background: #dcfce7; color: #15803d;">🎙️</div>
+                    <h4>Voice Search</h4>
+                    <p>Bol kar customer ka naam turant khojein</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon" style="background: #fef3c7; color: #b45309;">📊</div>
+                    <h4>Live Track</h4>
+                    <p>Instant market balance & total calculations</p>
+                </div>
+
+                <div class="info-card">
+                    <div class="info-card-icon" style="background: #f3e8ff; color: #6b21a8;">🔒</div>
+                    <h4>100% Safe</h4>
+                    <p>Zero clutter & fast offline storage</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: TRADERS MANAGEMENT -->
+        <div id="tabTraders" class="tab-content">
+            <!-- Trader List View -->
+            <div id="traderListView">
+                <div class="action-bar">
+                    <input type="text" id="searchTraderInput" class="search-input" onkeyup="filterTraders()" placeholder="🔍 Search Trader Name/Phone...">
+                    <button class="add-cust-btn" onclick="openAddTraderModal()">+ Add Trader</button>
+                </div>
+
+                <div class="traders-grid" id="tradersGridContainer">
+                    <!-- Traders cards loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Trader Detail View -->
+            <div id="traderDetailSection">
+                <div class="detail-header-box">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <img id="detailTraderImg" src="" alt="Trader" style="width: 45px; height: 45px; border-radius: 50%; object-fit: cover; border: 2px solid #059669;">
+                        <div>
+                            <h3 id="detailTraderName" style="margin: 0; font-size: 14px; font-weight: 800;">Trader Name</h3>
+                            <p id="detailTraderPhone" style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">📱 9999999999</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="openAddTraderEntryModal()" style="background: #059669; color: white; border: none; padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">+ Add Entry</button>
+                        <button onclick="backToTraderList()" style="background: #cbd5e1; color: #334155; border: none; padding: 6px 10px; border-radius: 8px; font-weight: 700; font-size: 11px; cursor: pointer;">⬅️ Back</button>
+                    </div>
+                </div>
+
+                <div class="history-container">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Bird</th>
+                                <th>Weight</th>
+                                <th>Rate</th>
+                                <th>Amount</th>
+                                <th>Maghil Baki</th>
+                                <th>Jama</th>
+                                <th>Remaining</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="traderHistoryBody">
+                            <!-- Entry rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: UDHARI KHATA MAIN LIST -->
+        <div id="tabKhata" class="tab-content">
+            <div class="action-bar">
+                <input type="text" id="searchCustInput" class="search-input" onkeyup="renderCustomers()" placeholder="🔍 Search Customer Name/Phone...">
+                <button class="mic-btn" onclick="startVoiceSearch()" title="Speak to Search">🎤</button>
+                <button class="add-cust-btn" onclick="openAddCustomerModal()">+ Add Customer</button>
+            </div>
+
+            <div id="customerListContainer">
+                <!-- Clean Cards dynamic loading -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 3-TAB BOTTOM NAVIGATION -->
+    <div class="bottom-nav">
+        <div class="nav-item active" id="navDash" onclick="switchTab('dash')">
+            <div class="nav-icon-box">📊</div>
+            <span>Dashboard</span>
+        </div>
+
+        <div class="nav-item" id="navTraders" onclick="switchTab('traders')">
+            <div class="nav-icon-box">🚚</div>
+            <span>Traders</span>
+        </div>
+
+        <div class="nav-item" id="navKhata" onclick="switchTab('khata')">
+            <div class="nav-icon-box">📒</div>
+            <span>Udhari Khata</span>
+        </div>
+    </div>
+
+    <!-- ADD TRADER ACCOUNT MODAL -->
+    <div id="addTraderModal" class="modal">
+        <div class="modal-box">
+            <h3>👤 Add New Trader</h3>
+            <p>Trader ki details darj karein:</p>
+            <input type="text" id="newTraderName" class="modal-input" placeholder="Trader Name (e.g. Ramesh Poultry)">
+            <input type="tel" id="newTraderPhone" class="modal-input" placeholder="Mobile Number">
+            <label style="font-size: 11px; font-weight: 700; color: #475569; display: block; text-align: left; margin-bottom: 4px;">Trader Photo (Optional):</label>
+            <input type="file" id="newTraderPic" accept="image/*" class="modal-input" style="padding: 6px;">
+            <div style="display: flex; gap: 8px; margin-top: 6px;">
+                <button onclick="saveNewTrader()" style="flex: 1; background: #059669; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">Save</button>
+                <button onclick="closeAddTraderModal()" style="flex: 1; background: #e2e8f0; color: #475569; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD TRADER TRANSACTION ENTRY MODAL -->
+    <div id="addTraderEntryModal" class="modal">
+        <div class="modal-box">
+            <h3 id="traderEntryModalTitle">Add Trader Entry</h3>
+            <input type="hidden" id="editTraderEntryIndex" value="-1">
+
+            <label style="font-size:11px; font-weight:700; color:#475569; text-align:left; display:block;">Date:</label>
+            <input type="date" id="traderEntryDate" class="modal-input">
+            
+            <label style="font-size:11px; font-weight:700; color:#475569; text-align:left; display:block;">Bird (Count):</label>
+            <input type="number" id="traderEntryBird" class="modal-input" placeholder="Number of Birds">
+            
+            <label style="font-size:11px; font-weight:700; color:#475569; text-align:left; display:block;">Weight (Kg):</label>
+            <input type="number" step="0.01" id="traderEntryWeight" class="modal-input" placeholder="Total Weight in Kg" oninput="calcTraderAmt()">
+            
+            <label style="font-size:11px; font-weight:700; color:#475569; text-align:left; display:block;">Rate (₹ per Kg):</label>
+            <input type="number" step="0.01" id="traderEntryRate" class="modal-input" placeholder="Rate per Kg" oninput="calcTraderAmt()">
+            
+            <label style="font-size:11px; font-weight:700; color:#475569; text-align:left; display:block;">Total Amount (₹):</label>
+            <input type="number" step="0.01" id="traderEntryAmount" class="modal-input" placeholder="Total Amount" oninput="calcTraderRemaining()">
+            
+            <label style="font-size:11px; font-weight:700; color:#475569; text-align:left; display:block;">Maghil Baki (Previous Balance ₹):</label>
+            <input type="number" step="0.01" id="traderEntryPrevBaki" class="modal-input" placeholder="Maghil Baki" oninput="calcTraderRemaining()">
+            
+            <label style="font-size:11px; font-weight:700; color:#475569; text-align:left; display:block;">Jama (Paid Amount ₹):</label>
+            <input type="number" step="0.01" id="traderEntryJama" class="modal-input" placeholder="Jama / Paid Amount" oninput="calcTraderRemaining()">
+
+            <div class="red-box-container">
+                <label>Total Remaining (₹)</label>
+                <input type="text" id="traderEntryRemaining" class="red-box-input" readonly value="0.00">
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <button onclick="saveTraderEntryData()" style="flex: 1; background: #059669; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">Save Entry</button>
+                <button onclick="closeAddTraderEntryModal()" style="flex: 1; background: #e2e8f0; color: #475569; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOMER LEDGER POPUP -->
+    <div id="customerLedgerModal" class="modal">
+        <div class="ledger-modal-box">
+            <div class="ledger-header">
+                <div class="ledger-cust-title">
+                    <h3 id="ledgerCustName">Customer Name</h3>
+                    <p id="ledgerCustPhone">📞 9822XXXXXX</p>
+                </div>
+                <button onclick="closeCustomerLedgerModal()" style="background:#e2e8f0; border:none; padding:6px 10px; border-radius:8px; font-weight:700; cursor:pointer;">✕ Close</button>
+            </div>
+
+            <div class="ledger-summary-box">
+                <span>Total Baaki Udhaar</span>
+                <h2 id="ledgerCustBalance">₹0</h2>
+            </div>
+
+            <div class="ledger-action-btns">
+                <button class="btn-ledger-act btn-act-jama" onclick="openAmountModal('jama')">📥 Jama (-)</button>
+                <button class="btn-ledger-act btn-act-udh" onclick="openAmountModal('udh')">📤 Udhaar (+)</button>
+            </div>
+
+            <div class="history-list-title">📜 Date-wise Transaction Records:</div>
+            <div class="history-scroll-area" id="ledgerHistoryContainer">
+                <!-- History Items -->
+            </div>
+
+            <div style="display:flex; justify-content:space-between; border-top:1px solid #e2e8f0; padding-top:10px; margin-top:auto;">
+                <button onclick="openAddCustomerModal(activeCustPhone)" style="background:none; border:none; color:#0284c7; font-size:12px; font-weight:700; cursor:pointer;">✏️ Edit Customer</button>
+                <button onclick="deleteCustomer(activeCustPhone)" style="background:none; border:none; color:#dc2626; font-size:12px; font-weight:700; cursor:pointer;">🗑️ Delete Khata</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT CUSTOMER MODAL -->
+    <div id="addCustomerModal" class="modal">
+        <div class="modal-box">
+            <h3 id="custModalHeading">👤 Add New Customer</h3>
+            <p>Customer ki details darj karein:</p>
+            <input type="text" id="newCustName" class="modal-input" placeholder="Customer Name (e.g. Rahul Patil)">
+            <input type="tel" id="newCustPhone" class="modal-input" placeholder="Mobile Number (e.g. 9822XXXXXX)">
+            <div style="display: flex; gap: 8px;">
+                <button onclick="saveCustomerData()" style="flex: 1; background: #059669; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">Save</button>
+                <button onclick="closeAddCustomerModal()" style="flex: 1; background: #e2e8f0; color: #475569; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPDATE AMOUNT MODAL -->
+    <div id="amountModal" class="modal">
+        <div class="modal-box">
+            <h3 id="amountModalTitle">Update Amount</h3>
+            <p>Amount enter karein ya niche chip dabayein:</p>
+            <div class="quick-chips">
+                <span class="chip" onclick="addQuickAmt(100)">+₹100</span>
+                <span class="chip" onclick="addQuickAmt(500)">+₹500</span>
+                <span class="chip" onclick="addQuickAmt(1000)">+₹1000</span>
+                <span class="chip" onclick="addQuickAmt(2000)">+₹2000</span>
+            </div>
+            <input type="number" id="transactionAmount" class="modal-input" placeholder="Enter Amount (₹)">
+            <div style="display: flex; gap: 8px;">
+                <button onclick="confirmTransaction()" style="flex: 1; background: #059669; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">Confirm</button>
+                <button onclick="closeAmountModal()" style="flex: 1; background: #e2e8f0; color: #475569; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration provided from user keys[cite: 8]
+        const firebaseConfig = {
+            apiKey: "AIzaSyATtKhidCvsosXiPdnfoLsXZDMry9wlntA",
+            authDomain: "csmgr-fe41d.firebaseapp.com",
+            projectId: "csmgr-fe41d",
+            storageBucket: "csmgr-fe41d.firebasestorage.app",
+            messagingSenderId: "699415684768",
+            appId: "1:699415684768:web:6ca1f87c35def1a4848bc5",
+            measurementId: "G-TXFGL89KDT",
+            databaseURL: "https://csmgr-fe41d-default-rtdb.firebaseio.com"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+        function getShopPath() {
+            let shopCode = localStorage.getItem('chicken_shop_code') || 'CSMGR-001';
+            return 'licenses/' + shopCode;
+        }
+
+        let customers = [];
+        let traders = [];
+        let shopSetup = JSON.parse(localStorage.getItem('smart_udhari_shop_setup') || 'null');
+        let uploadedLogoData = null;
+        let activeCustPhone = null;
+        let activeTraderId = null;
+        let activeAmountType = 'udh';
+        let editingPhone = null;
+        let deferredPrompt = null;
+
+        function initApp() {
+            checkShopSetup();
+            initFirebaseSync();
+            updateCalendarStatusBar();
+            registerServiceWorker();
+        }
+
+        function initFirebaseSync() {
+            // Realtime sync for shop setup info
+            db.ref(getShopPath() + '/shopSetup').on('value', (snapshot) => {
+                let data = snapshot.val();
+                if (data) {
+                    shopSetup = data;
+                    localStorage.setItem('smart_udhari_shop_setup', JSON.stringify(data));
+                    checkShopSetup();
+                }
+            });
+
+            // Realtime sync for customers
+            db.ref(getShopPath() + '/customers').on('value', (snapshot) => {
+                let data = snapshot.val();
+                customers = data ? Object.values(data) : [];
+                localStorage.setItem('smart_udhari_customers', JSON.stringify(customers));
+                renderCustomers();
+                updateDashboardStats();
+            });
+
+            // Realtime sync for traders
+            db.ref(getShopPath() + '/traders').on('value', (snapshot) => {
+                let data = snapshot.val();
+                traders = data ? Object.values(data) : [];
+                localStorage.setItem('chicken_traders', JSON.stringify(traders));
+                renderTraders();
+            });
+        }
+
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                .then(() => console.log('Service Worker Registered Successfully'))
+                .catch((err) => console.log('Service Worker Failed', err));
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installAppBtn').style.display = 'inline-block';
+        });
+
+        function installPWAApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                    document.getElementById('installAppBtn').style.display = 'none';
+                });
+            }
+        }
+
+        function triggerLogoFileInput() {
+            document.getElementById('setupLogoFileInput').click();
+        }
+
+        function handleLogoUpload(event) {
+            let file = event.target.files[0];
+            if (file) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadedLogoData = e.target.result;
+                    document.getElementById('modalLogoPreview').src = uploadedLogoData;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateCalendarStatusBar() {
+            let today = new Date();
+            let dayName = today.toLocaleDateString('en-IN', { weekday: 'long' });
+            let dateNum = today.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+            document.getElementById('calDateNum').innerHTML = `${dateNum}<br><span style="font-size:10px; color:#64748b; font-weight:600;">${today.getFullYear()}</span>`;
+            document.getElementById('calDayName').innerText = dayName;
+            
+            let specialText = `📅 Fresh Stock Available`;
+            if (dayName === 'Sunday') specialText = `🌟 Sunday Special Rush`;
+            else if (dayName === 'Wednesday') specialText = `🐔 Mid-week Broiler Special`;
+            document.getElementById('calSpecialEvent').innerText = specialText;
+
+            let tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+            let nextDayName = tomorrow.toLocaleDateString('en-IN', { weekday: 'long' });
+            
+            let nextDayStatus = "🔥 Heavy Demand";
+            if (nextDayName === 'Tuesday' || nextDayName === 'Thursday') {
+                nextDayStatus = "⚠️ Upwas / Vrat (Low Sales)";
+            } else if (nextDayName === 'Sunday') {
+                nextDayStatus = "🚀 Mega Sunday Rush";
+            }
+            document.getElementById('calNextDayStatus').innerText = nextDayStatus;
+        }
+
+        function checkShopSetup() {
+            if (!shopSetup || !shopSetup.shopName) {
+                openShopSetupModal();
+            } else {
+                document.getElementById('displayHeaderShopName').innerText = shopSetup.shopName;
+                document.getElementById('displayHeaderOwnerDetails').innerText = `Owner: ${shopSetup.ownerName} (${shopSetup.phone})`;
+                if (shopSetup.logoImg) {
+                    document.getElementById('displayHeaderLogo').src = shopSetup.logoImg;
+                    document.getElementById('modalLogoPreview').src = shopSetup.logoImg;
+                }
+            }
+        }
+
+        function openShopSetupModal() {
+            if (shopSetup) {
+                document.getElementById('setupShopName').value = shopSetup.shopName || '';
+                document.getElementById('setupOwnerName').value = shopSetup.ownerName || '';
+                document.getElementById('setupPhone').value = shopSetup.phone || '';
+                uploadedLogoData = shopSetup.logoImg || null;
+                if (uploadedLogoData) {
+                    document.getElementById('modalLogoPreview').src = uploadedLogoData;
+                }
+            }
+            document.getElementById('shopSetupModal').style.display = 'flex';
+        }
+
+        function saveShopSetupDetails() {
+            let shopName = document.getElementById('setupShopName').value.trim();
+            let ownerName = document.getElementById('setupOwnerName').value.trim();
+            let phone = document.getElementById('setupPhone').value.trim();
+
+            if (!shopName || !ownerName || !phone) {
+                alert("Kripya saare khane bharein!");
+                return;
+            }
+
+            shopSetup = { shopName, ownerName, phone, logoImg: uploadedLogoData || (shopSetup ? shopSetup.logoImg : 'Logo.png') };
+            localStorage.setItem('smart_udhari_shop_setup', JSON.stringify(shopSetup));
+
+            // Sync Shop Setup with Firebase
+            db.ref(getShopPath() + '/shopSetup').set(shopSetup);
+
+            document.getElementById('displayHeaderShopName').innerText = shopName;
+            document.getElementById('displayHeaderOwnerDetails').innerText = `Owner: ${ownerName} (${phone})`;
+            if (shopSetup.logoImg) {
+                document.getElementById('displayHeaderLogo').src = shopSetup.logoImg;
+            }
+
+            document.getElementById('shopSetupModal').style.display = 'none';
+        }
+
+        function startVoiceSearch() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert("Aapka browser voice search support nahi karta!");
+                return;
+            }
+            let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            let recognition = new SpeechRecognition();
+            recognition.lang = 'hi-IN';
+            recognition.onresult = function(event) {
+                let spokenText = event.results[0][0].transcript;
+                document.getElementById('searchCustInput').value = spokenText;
+                renderCustomers();
+            };
+            recognition.start();
+        }
+
+        function addQuickAmt(val) {
+            let inputField = document.getElementById('transactionAmount');
+            let currentVal = parseFloat(inputField.value) || 0;
+            inputField.value = currentVal + val;
+        }
+
+        function toggleVideoMute() {
+            let video = document.getElementById('promoVideo');
+            let btn = document.getElementById('muteToggleBtn');
+            video.muted = !video.muted;
+            btn.innerHTML = video.muted ? "🔇 Unmute Audio" : "🔊 Mute Audio";
+        }
+
+        function switchTab(tab) {
+            document.getElementById('tabDashboard').classList.remove('active');
+            document.getElementById('tabTraders').classList.remove('active');
+            document.getElementById('tabKhata').classList.remove('active');
+            document.getElementById('navDash').classList.remove('active');
+            document.getElementById('navTraders').classList.remove('active');
+            document.getElementById('navKhata').classList.remove('active');
+
+            if (tab === 'dash') {
+                document.getElementById('tabDashboard').classList.add('active');
+                document.getElementById('navDash').classList.add('active');
+                updateDashboardStats();
+                updateCalendarStatusBar();
+            } else if (tab === 'traders') {
+                document.getElementById('tabTraders').classList.add('active');
+                document.getElementById('navTraders').classList.add('active');
+                renderTraders();
+            } else {
+                document.getElementById('tabKhata').classList.add('active');
+                document.getElementById('navKhata').classList.add('active');
+                renderCustomers();
+            }
+        }
+
+        function updateDashboardStats() {
+            let total = customers.reduce((sum, c) => sum + (c.balance || 0), 0);
+            document.getElementById('dashTotalUdhaar').innerText = `₹${total}`;
+            document.getElementById('dashTotalCust').innerText = customers.length;
+        }
+
+        /* --- TRADERS LOGIC --- */
+        function renderTraders() {
+            let container = document.getElementById('tradersGridContainer');
+            container.innerHTML = '';
+
+            let searchVal = document.getElementById('searchTraderInput').value.toLowerCase().trim();
+            let filtered = traders.filter(t => t.name.toLowerCase().includes(searchVal) || t.phone.includes(searchVal));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p style="text-align: center; color: #64748b; font-size: 13px; padding: 30px 0; grid-column: span 2;">Koi trader nahi mila. Naya trader add karein!</p>`;
+                return;
+            }
+
+            filtered.forEach(trd => {
+                let balance = calculateTraderBalance(trd.id);
+                let defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23059669'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
+
+                let card = document.createElement('div');
+                card.className = 'trader-card';
+                card.onclick = () => openTraderDetail(trd.id);
+
+                card.innerHTML = `
+                    <div class="trader-card-top">
+                        <img src="${trd.pic || defaultAvatar}" class="trader-avatar" onerror="this.src='${defaultAvatar}'">
+                        <div class="trader-info">
+                            <h4>${trd.name}</h4>
+                            <p>📱 ${trd.phone || 'No Number'}</p>
+                        </div>
+                    </div>
+                    <div class="trader-card-footer">
+                        <span style="font-size: 10px; font-weight: 700; color: #64748b;">Total Baki</span>
+                        <span class="trader-bal" style="color: ${balance < 0 ? '#059669' : '#dc2626'};">₹${balance.toFixed(2)}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function calculateTraderBalance(trdId) {
+            let entries = JSON.parse(localStorage.getItem('chicken_trader_entries_' + trdId) || '[]');
+            if (entries.length === 0) return 0;
+            return parseFloat(entries[entries.length - 1].remaining) || 0;
+        }
+
+        function openAddTraderModal() {
+            document.getElementById('newTraderName').value = '';
+            document.getElementById('newTraderPhone').value = '';
+            document.getElementById('newTraderPic').value = '';
+            document.getElementById('addTraderModal').style.display = 'flex';
+        }
+
+        function closeAddTraderModal() {
+            document.getElementById('addTraderModal').style.display = 'none';
+        }
+
+        function saveNewTrader() {
+            let name = document.getElementById('newTraderName').value.trim();
+            let phone = document.getElementById('newTraderPhone').value.trim();
+            let picFile = document.getElementById('newTraderPic').files[0];
+
+            if (!name) {
+                alert("Kripya Trader ka naam darj karein!");
+                return;
+            }
+
+            let trdId = 'trd_' + Date.now();
+            let saveTrdObj = (imgData) => {
+                traders.unshift({
+                    id: trdId,
+                    name: name,
+                    phone: phone,
+                    pic: imgData || ''
+                });
+                
+                // Sync to Firebase
+                let tradersObj = {};
+                traders.forEach(t => tradersObj[t.id] = t);
+                db.ref(getShopPath() + '/traders').set(tradersObj);
+
+                closeAddTraderModal();
+                renderTraders();
+            };
+
+            if (picFile) {
+                let reader = new FileReader();
+                reader.onload = function(e) { saveTrdObj(e.target.result); };
+                reader.readAsDataURL(picFile);
+            } else {
+                saveTrdObj('');
+            }
+        }
+
+        function filterTraders() {
+            renderTraders();
+        }
+
+        function openTraderDetail(trdId) {
+            activeTraderId = trdId;
+            let trd = traders.find(t => t.id === trdId);
+            if (!trd) return;
+
+            let defaultAvatar = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23059669'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>";
+
+            document.getElementById('detailTraderName').innerText = trd.name;
+            document.getElementById('detailTraderPhone').innerText = `📱 ${trd.phone || 'No Number'}`;
+            document.getElementById('detailTraderImg').src = trd.pic || defaultAvatar;
+
+            loadTraderEntries(trdId);
+
+            document.getElementById('traderListView').style.display = 'none';
+            document.getElementById('traderDetailSection').style.display = 'block';
+        }
+
+        function backToTraderList() {
+            activeTraderId = null;
+            document.getElementById('traderDetailSection').style.display = 'none';
+            document.getElementById('traderListView').style.display = 'block';
+            renderTraders();
+        }
+
+        function loadTraderEntries(trdId) {
+            let tbody = document.getElementById('traderHistoryBody');
+            tbody.innerHTML = '';
+
+            let entries = JSON.parse(localStorage.getItem('chicken_trader_entries_' + trdId) || '[]');
+            if (entries.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #64748b; padding: 20px;">Abhi koi entry nahi hai.</td></tr>`;
+                return;
+            }
+
+            entries.forEach((ent, index) => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${ent.date}</td>
+                    <td>${ent.bird || 0}</td>
+                    <td>${ent.weight || 0} Kg</td>
+                    <td>₹${ent.rate || 0}</td>
+                    <td>₹${ent.amount || 0}</td>
+                    <td style="color:#dc2626;">₹${ent.prevBaki || 0}</td>
+                    <td style="color:#166534;">₹${ent.jama || 0}</td>
+                    <td style="font-weight:800; color:${ent.remaining < 0 ? '#166534' : '#dc2626'};">₹${ent.remaining || 0}</td>
+                    <td>
+                        <button onclick="deleteTraderEntry('${trdId}', ${index})" style="background:none; border:none; color:#dc2626; cursor:pointer; font-weight:bold;">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openAddTraderEntryModal() {
+            document.getElementById('traderEntryModalTitle').innerText = "Add Trader Entry";
+            document.getElementById('editTraderEntryIndex').value = "-1";
+            document.getElementById('traderEntryDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('traderEntryBird').value = '';
+            document.getElementById('traderEntryWeight').value = '';
+            document.getElementById('traderEntryRate').value = '';
+            document.getElementById('traderEntryAmount').value = '';
+
+            let lastBal = calculateTraderBalance(activeTraderId);
+            document.getElementById('traderEntryPrevBaki').value = lastBal.toFixed(2);
+            document.getElementById('traderEntryJama').value = '';
+            calcTraderRemaining();
+
+            document.getElementById('addTraderEntryModal').style.display = 'flex';
+        }
+
+        function closeAddTraderEntryModal() {
+            document.getElementById('addTraderEntryModal').style.display = 'none';
+        }
+
+        function calcTraderAmt() {
+            let weight = parseFloat(document.getElementById('traderEntryWeight').value) || 0;
+            let rate = parseFloat(document.getElementById('traderEntryRate').value) || 0;
+            if (weight > 0 && rate > 0) {
+                document.getElementById('traderEntryAmount').value = (weight * rate).toFixed(2);
+            }
+            calcTraderRemaining();
+        }
+
+        function calcTraderRemaining() {
+            let amount = parseFloat(document.getElementById('traderEntryAmount').value) || 0;
+            let prevBaki = parseFloat(document.getElementById('traderEntryPrevBaki').value) || 0;
+            let jama = parseFloat(document.getElementById('traderEntryJama').value) || 0;
+
+            let remaining = (prevBaki + amount) - jama;
+            document.getElementById('traderEntryRemaining').value = remaining.toFixed(2);
+        }
+
+        function saveTraderEntryData() {
+            let date = document.getElementById('traderEntryDate').value;
+            let bird = document.getElementById('traderEntryBird').value;
+            let weight = document.getElementById('traderEntryWeight').value;
+            let rate = document.getElementById('traderEntryRate').value;
+            let amount = document.getElementById('traderEntryAmount').value;
+            let prevBaki = document.getElementById('traderEntryPrevBaki').value;
+            let jama = document.getElementById('traderEntryJama').value;
+            let remaining = document.getElementById('traderEntryRemaining').value;
+
+            if (!date) {
+                alert("Kripya date select karein!");
+                return;
+            }
+
+            let entries = JSON.parse(localStorage.getItem('chicken_trader_entries_' + activeTraderId) || '[]');
+            entries.push({
+                date, bird, weight, rate,
+                amount: parseFloat(amount) || 0,
+                prevBaki: parseFloat(prevBaki) || 0,
+                jama: parseFloat(jama) || 0,
+                remaining: parseFloat(remaining) || 0
+            });
+
+            localStorage.setItem('chicken_trader_entries_' + activeTraderId, JSON.stringify(entries));
+            
+            let entriesObj = {};
+            entries.forEach((e, idx) => entriesObj[idx] = e);
+            db.ref(getShopPath() + '/traders_entries/' + activeTraderId).set(entriesObj);
+
+            closeAddTraderEntryModal();
+            loadTraderEntries(activeTraderId);
+            renderTraders();
+        }
+
+        function deleteTraderEntry(trdId, index) {
+            if (confirm("Kya aap yeh entry delete karna chahte hain?")) {
+                let entries = JSON.parse(localStorage.getItem('chicken_trader_entries_' + trdId) || '[]');
+                entries.splice(index, 1);
+                localStorage.setItem('chicken_trader_entries_' + trdId, JSON.stringify(entries));
+                
+                let entriesObj = {};
+                entries.forEach((e, idx) => entriesObj[idx] = e);
+                db.ref(getShopPath() + '/traders_entries/' + trdId).set(entriesObj);
+
+                loadTraderEntries(trdId);
+                renderTraders();
+            }
+        }
+
+        /* --- CUSTOMER KHATA LOGIC --- */
+        function renderCustomers() {
+            let container = document.getElementById('customerListContainer');
+            container.innerHTML = '';
+
+            let searchVal = document.getElementById('searchCustInput').value.toLowerCase().trim();
+            let filtered = customers.filter(c => c.name.toLowerCase().includes(searchVal) || c.phone.includes(searchVal));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p style="text-align: center; color: #64748b; font-size: 13px; padding: 30px 0;">Koi customer nahi mila. Naya customer add karein!</p>`;
+                return;
+            }
+
+            filtered.forEach(cust => {
+                let initials = cust.name.split(' ').map(n => n[0]).join('').substring(0, 2);
+
+                let card = document.createElement('div');
+                card.className = 'customer-card';
+                card.onclick = () => openCustomerLedgerModal(cust.phone);
+                
+                card.innerHTML = `
+                    <div class="cust-header">
+                        <div class="cust-info">
+                            <div class="avatar-box">${initials}</div>
+                            <div class="cust-details">
+                                <h4>${cust.name}</h4>
+                                <p>📞 ${cust.phone}</p>
+                                <span class="cust-date">📅 Last Entry: ${cust.lastDate || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="cust-amount">
+                            <span>Baaki Udhaar</span>
+                            <h3>₹${cust.balance}</h3>
+                        </div>
+                    </div>
+                    <div class="cust-card-footer">
+                        <span class="tap-hint">👉 Tap to View Full Khata / Add Transaction</span>
+                        <button class="btn-wa-small" onclick="event.stopPropagation(); sendWhatsAppReminder('${cust.name}', '${cust.phone}', ${cust.balance})">💬 WhatsApp</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function openCustomerLedgerModal(phone) {
+            activeCustPhone = phone;
+            let cust = customers.find(c => c.phone === phone);
+            if (!cust) return;
+
+            document.getElementById('ledgerCustName').innerText = cust.name;
+            document.getElementById('ledgerCustPhone').innerText = `📞 ${cust.phone}`;
+            document.getElementById('ledgerCustBalance').innerText = `₹${cust.balance}`;
+
+            let historyContainer = document.getElementById('ledgerHistoryContainer');
+            historyContainer.innerHTML = '';
+
+            let historyList = cust.history || [];
+            if (historyList.length === 0) {
+                historyContainer.innerHTML = `<p style="text-align:center; color:#94a3b8; font-size:12px; padding:20px 0;">Abhi koi transaction history nahi hai.</p>`;
+            } else {
+                historyList.forEach(item => {
+                    let div = document.createElement('div');
+                    div.className = 'history-item';
+                    let isJama = item.type === 'jama';
+                    div.innerHTML = `
+                        <div>
+                            <span class="history-item-date">${item.date}</span>
+                            <div style="font-size:11px; color:#64748b;">${isJama ? '📥 Payment Received' : '📤 Chicken Purchase'}</div>
+                        </div>
+                        <div class="history-item-amt ${isJama ? 'amt-jama' : 'amt-udh'}">
+                            ${isJama ? '-' : '+'}₹${item.amount}
+                        </div>
+                    `;
+                    historyContainer.appendChild(div);
+                });
+            }
+
+            document.getElementById('customerLedgerModal').style.display = 'flex';
+        }
+
+        function closeCustomerLedgerModal() {
+            document.getElementById('customerLedgerModal').style.display = 'none';
+        }
+
+        function openAmountModal(type) {
+            activeAmountType = type;
+            document.getElementById('transactionAmount').value = '';
+            document.getElementById('amountModalTitle').innerText = (type === 'jama') ? '📥 Paise Jama (Payment Received)' : '📤 Naya Udhaar (Maal Diya)';
+            document.getElementById('amountModal').style.display = 'flex';
+        }
+
+        function closeAmountModal() {
+            document.getElementById('amountModal').style.display = 'none';
+        }
+
+        function confirmTransaction() {
+            let amt = parseFloat(document.getElementById('transactionAmount').value);
+            if (isNaN(amt) || amt <= 0) {
+                alert("Kripya valid amount daalein!");
+                return;
+            }
+
+            let cust = customers.find(c => c.phone === activeCustPhone);
+            if (cust) {
+                if (!cust.history) cust.history = [];
+
+                let now = new Date();
+                let formattedDate = now.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) + ` (${now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })})`;
+
+                if (activeAmountType === 'jama') {
+                    cust.balance = Math.max(0, cust.balance - amt);
+                } else {
+                    cust.balance += amt;
+                }
+
+                cust.lastDate = formattedDate;
+                cust.history.unshift({
+                    type: activeAmountType,
+                    amount: amt,
+                    date: formattedDate
+                });
+
+                saveAndRefreshFirebase();
+                closeAmountModal();
+                openCustomerLedgerModal(activeCustPhone);
+            }
+        }
+
+        function openAddCustomerModal(phoneToEdit = null) {
+            closeCustomerLedgerModal();
+            editingPhone = phoneToEdit;
+            if (phoneToEdit) {
+                let cust = customers.find(c => c.phone === phoneToEdit);
+                document.getElementById('custModalHeading').innerText = "✏️ Edit Customer";
+                document.getElementById('newCustName').value = cust.name;
+                document.getElementById('newCustPhone').value = cust.phone;
+            } else {
+                document.getElementById('custModalHeading').innerText = "👤 Add New Customer";
+                document.getElementById('newCustName').value = '';
+                document.getElementById('newCustPhone').value = '';
+            }
+            document.getElementById('addCustomerModal').style.display = 'flex';
+        }
+
+        function closeAddCustomerModal() {
+            document.getElementById('addCustomerModal').style.display = 'none';
+            editingPhone = null;
+        }
+
+        function saveCustomerData() {
+            let name = document.getElementById('newCustName').value.trim();
+            let phone = document.getElementById('newCustPhone').value.trim();
+
+            if (!name || !phone) {
+                alert("Kripya Naam aur Phone Number dono darj karein!");
+                return;
+            }
+
+            let currentDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            if (editingPhone) {
+                let cust = customers.find(c => c.phone === editingPhone);
+                if (cust) {
+                    cust.name = name;
+                    cust.phone = phone;
+                }
+            } else {
+                if (customers.some(c => c.phone === phone)) {
+                    alert("Yeh mobile number pehle se added hai!");
+                    return;
+                }
+
+                customers.unshift({
+                    name: name,
+                    phone: phone,
+                    balance: 0,
+                    lastDate: currentDate,
+                    history: []
+                });
+            }
+
+            saveAndRefreshFirebase();
+            closeAddCustomerModal();
+        }
+
+        function deleteCustomer(phone) {
+            if (confirm("Kya aap sach mein is customer ka poora khata delete karna chahte hain?")) {
+                customers = customers.filter(c => c.phone !== phone);
+                saveAndRefreshFirebase();
+                closeCustomerLedgerModal();
+            }
+        }
+
+        function sendWhatsAppReminder(name, phone, balance) {
+            let currentShopName = (shopSetup && shopSetup.shopName) ? shopSetup.shopName : 'Chicken Shop';
+            let msg = `Hello ${name}, aapka ${currentShopName} par total ₹${balance} udhaar baaki hai. Kripya samay par bhej dein. Thank you! 🐔`;
+            let url = `https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`;
+            window.open(url, '_blank');
+        }
+
+        function saveAndRefreshFirebase() {
+            localStorage.setItem('smart_udhari_customers', JSON.stringify(customers));
+            
+            // Sync customers to Firebase
+            let custObj = {};
+            customers.forEach((c, idx) => custObj[c.phone || idx] = c);
+            db.ref(getShopPath() + '/customers').set(custObj);
+
+            renderCustomers();
+            updateDashboardStats();
+        }
+    </script>
+</body>
+</html>
