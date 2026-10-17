@@ -241,7 +241,7 @@
         <div class="header-brand">
             <img id="displayHeaderLogo" src="Logo.png" alt="Shop Logo" class="header-logo-img" onerror="this.src='Logo.png'">
             <div>
-                <h2 id="displayHeaderShopName">KADIR CHICKEN CENTER</h2>
+                <h2 id="displayHeaderShopName">SMART UDHARI</h2>
                 <p id="displayHeaderOwnerDetails">Owner: Loading...</p>
             </div>
         </div>
@@ -525,7 +525,6 @@
     </div>
 
     <script>
-        // Firebase Configuration provided from user keys[cite: 8]
         const firebaseConfig = {
             apiKey: "AIzaSyATtKhidCvsosXiPdnfoLsXZDMry9wlntA",
             authDomain: "csmgr-fe41d.firebaseapp.com",
@@ -543,8 +542,12 @@
         const db = firebase.database();
 
         function getShopPath() {
-            let shopCode = localStorage.getItem('chicken_shop_code') || 'CSMGR-001';
-            return 'licenses/' + shopCode;
+            let shopSetupData = JSON.parse(localStorage.getItem('smart_udhari_shop_setup') || 'null');
+            if (shopSetupData && shopSetupData.phone) {
+                // Unique path based on owner's mobile number so data never mixes between users
+                return 'shops/' + shopSetupData.phone.replace(/[^0-9]/g, '');
+            }
+            return null;
         }
 
         let customers = [];
@@ -559,24 +562,16 @@
 
         function initApp() {
             checkShopSetup();
-            initFirebaseSync();
             updateCalendarStatusBar();
             registerServiceWorker();
         }
 
         function initFirebaseSync() {
-            // Realtime sync for shop setup info
-            db.ref(getShopPath() + '/shopSetup').on('value', (snapshot) => {
-                let data = snapshot.val();
-                if (data) {
-                    shopSetup = data;
-                    localStorage.setItem('smart_udhari_shop_setup', JSON.stringify(data));
-                    checkShopSetup();
-                }
-            });
+            let path = getShopPath();
+            if (!path) return;
 
             // Realtime sync for customers
-            db.ref(getShopPath() + '/customers').on('value', (snapshot) => {
+            db.ref(path + '/customers').on('value', (snapshot) => {
                 let data = snapshot.val();
                 customers = data ? Object.values(data) : [];
                 localStorage.setItem('smart_udhari_customers', JSON.stringify(customers));
@@ -585,7 +580,7 @@
             });
 
             // Realtime sync for traders
-            db.ref(getShopPath() + '/traders').on('value', (snapshot) => {
+            db.ref(path + '/traders').on('value', (snapshot) => {
                 let data = snapshot.val();
                 traders = data ? Object.values(data) : [];
                 localStorage.setItem('chicken_traders', JSON.stringify(traders));
@@ -663,7 +658,7 @@
         }
 
         function checkShopSetup() {
-            if (!shopSetup || !shopSetup.shopName) {
+            if (!shopSetup || !shopSetup.shopName || !shopSetup.phone) {
                 openShopSetupModal();
             } else {
                 document.getElementById('displayHeaderShopName').innerText = shopSetup.shopName;
@@ -672,6 +667,7 @@
                     document.getElementById('displayHeaderLogo').src = shopSetup.logoImg;
                     document.getElementById('modalLogoPreview').src = shopSetup.logoImg;
                 }
+                initFirebaseSync();
             }
         }
 
@@ -694,15 +690,16 @@
             let phone = document.getElementById('setupPhone').value.trim();
 
             if (!shopName || !ownerName || !phone) {
-                alert("Kripya saare khane bharein!");
+                alert("Kripya saare khane (Shop Name, Owner Name, Mobile Number) bharein!");
                 return;
             }
 
             shopSetup = { shopName, ownerName, phone, logoImg: uploadedLogoData || (shopSetup ? shopSetup.logoImg : 'Logo.png') };
             localStorage.setItem('smart_udhari_shop_setup', JSON.stringify(shopSetup));
 
-            // Sync Shop Setup with Firebase
-            db.ref(getShopPath() + '/shopSetup').set(shopSetup);
+            let path = getShopPath();
+            // Sync Shop Setup & Profile to Firebase under unique owner path
+            db.ref(path + '/shopSetup').set(shopSetup);
 
             document.getElementById('displayHeaderShopName').innerText = shopName;
             document.getElementById('displayHeaderOwnerDetails').innerText = `Owner: ${ownerName} (${phone})`;
@@ -711,6 +708,7 @@
             }
 
             document.getElementById('shopSetupModal').style.display = 'none';
+            initFirebaseSync();
         }
 
         function startVoiceSearch() {
@@ -846,7 +844,7 @@
                     pic: imgData || ''
                 });
                 
-                // Sync to Firebase
+                // Sync to Firebase under unique shop path
                 let tradersObj = {};
                 traders.forEach(t => tradersObj[t.id] = t);
                 db.ref(getShopPath() + '/traders').set(tradersObj);
@@ -1213,7 +1211,7 @@
         function saveAndRefreshFirebase() {
             localStorage.setItem('smart_udhari_customers', JSON.stringify(customers));
             
-            // Sync customers to Firebase
+            // Sync customers to Firebase under unique shop path
             let custObj = {};
             customers.forEach((c, idx) => custObj[c.phone || idx] = c);
             db.ref(getShopPath() + '/customers').set(custObj);
